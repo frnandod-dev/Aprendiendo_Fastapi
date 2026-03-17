@@ -41,3 +41,21 @@ def crear_gasto(gasto : GastoSchema):
     db.commit()
     db.close()
     return nuevo_gasto
+
+@router.put("/gasto/{id}")
+def modificar_gasto(id: int, gasto: GastoSchema):
+    db = SessionLocal()
+    buscar_id = db.query(Gastos).filter(Gastos.id == id).first()
+    if buscar_id:
+        buscar_id.nombre = gasto.nombre
+        buscar_id.cantidad = gasto.cantidad
+        buscar_id.categoria = gasto.categoria
+        buscar_id.fecha = gasto.fecha
+        db.commit()
+        db.close()
+        return buscar_id
+    else:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+    
+    
+    
