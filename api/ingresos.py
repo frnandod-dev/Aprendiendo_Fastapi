@@ -33,10 +33,15 @@ def obtener_ingresos_id(id: int):
 def agregar_ingreso(ingreso: IngresoSchema):
     db = SessionLocal()
     nuevo_ingreso = Ingresos(cantidad=ingreso.cantidad, origen=ingreso.origen, fecha=ingreso.fecha)
-    db.add(nuevo_ingreso)
-    db.commit()
-    db.close()
-    return nuevo_ingreso
+    try:
+        db.add(nuevo_ingreso)
+        db.commit()
+        db.close()
+        return nuevo_ingreso
+    except Exception as e:
+        db.rollback()
+        db.close()
+        raise HTTPException(status_code=500, detail="Error al guardar Ingreso")
 
 @router.put("/ingresos/{id}")
 def modificar_ingreso(id: int, ingreso: IngresoSchema):

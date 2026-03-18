@@ -33,10 +33,15 @@ def obtener_gastos(id: int):
 def crear_gasto(gasto : GastoSchema):
     db = SessionLocal()
     nuevo_gasto = Gastos(nombre=gasto.nombre, cantidad=gasto.cantidad, categoria=gasto.categoria, fecha=gasto.fecha)
-    db.add(nuevo_gasto)
-    db.commit()
-    db.close()
-    return nuevo_gasto
+    try:
+        db.add(nuevo_gasto)
+        db.commit()
+        db.close()
+        return nuevo_gasto
+    except Exception as e :
+        db.rollback()
+        db.close()
+        raise HTTPException(status_code=500, detail="Error al guardar el gasto")
 
 @router.put("/gasto/{id}")
 def modificar_gasto(id: int, gasto: GastoSchema):
