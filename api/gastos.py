@@ -57,5 +57,17 @@ def modificar_gasto(id: int, gasto: GastoSchema):
     else:
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
     
+@router.delete("/gasto/{id}")
+def delete_gasto(id: int):
+    db = SessionLocal()
+    buscar_id_y_eliminar = db.query(Gastos).filter(Gastos.id == id).first()
+    if buscar_id_y_eliminar:
+        db.delete(buscar_id_y_eliminar)
+        db.commit()
+        db.close()
+    else:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+    return {"mensaje": "Gasto eliminado"}
+
     
     
