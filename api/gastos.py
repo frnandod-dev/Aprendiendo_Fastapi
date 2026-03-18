@@ -13,10 +13,6 @@ class GastoSchema(BaseModel):
 
 router = APIRouter()
 
-@router.get("/")
-def inicio():
-    return {"mensaje": "Bienvenidos al controlador de Gastos"}
-
 @router.get("/gastos")
 def obtener_gastos():
     db = SessionLocal()
