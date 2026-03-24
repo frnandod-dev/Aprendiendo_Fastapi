@@ -33,30 +33,38 @@ def obtener_ingresos_id(id: int):
 def agregar_ingreso(ingreso: IngresoSchema):
     db = SessionLocal()
     nuevo_ingreso = Ingresos(cantidad=ingreso.cantidad, origen=ingreso.origen, fecha=ingreso.fecha)
-    try:
-        db.add(nuevo_ingreso)
-        db.commit()
-        db.close()
-        return nuevo_ingreso
-    except Exception as e:
-        db.rollback()
-        db.close()
-        raise HTTPException(status_code=500, detail="Error al guardar Ingreso")
-
+    validar_ingresos = db.query(Ingresos).filter(Ingresos.cantidad == ingreso.cantidad, Ingresos.origen == ingreso.origen).first()
+    if not validar_ingresos:
+        try:
+            db.add(nuevo_ingreso)
+            db.commit()
+            db.close()
+            return nuevo_ingreso
+        except Exception as e:
+            db.rollback()
+            db.close()
+            raise HTTPException(status_code=500, detail="Error al guardar Ingreso")
+    else: 
+        raise HTTPException(status_code=409, detail="Ingreso Duplicado")
+    
 @router.put("/ingresos/{id}")
 def modificar_ingreso(id: int, ingreso: IngresoSchema):
     db = SessionLocal()
-    buscar_id_ingresos = db.query(Ingresos).filter(Ingresos.id == id).first()
-    if buscar_id_ingresos:
-        buscar_id_ingresos.cantidad = ingreso.cantidad
-        buscar_id_ingresos.origen = ingreso.origen
-        buscar_id_ingresos.fecha = ingreso.fecha
-        db.commit()
-        db.close()
-        return buscar_id_ingresos
+    validar_ingresos = db.query(Ingresos).filter(Ingresos.cantidad == ingreso.cantidad, Ingresos.origen == ingreso.origen, Ingresos.id != id).first()
+    if not validar_ingresos:
+        buscar_id_ingresos = db.query(Ingresos).filter(Ingresos.id == id).first()
+        if buscar_id_ingresos:
+            buscar_id_ingresos.cantidad = ingreso.cantidad
+            buscar_id_ingresos.origen = ingreso.origen
+            buscar_id_ingresos.fecha = ingreso.fecha
+            db.commit()
+            db.close()
+            return buscar_id_ingresos
+        else:
+            raise HTTPException(status_code=404, detail="Ingreso no encontrado")
     else:
-        raise HTTPException(status_code=404, detail="Ingreso no encontrado")
-
+        raise HTTPException(status_code=409, detail="Ingreso duplicado")
+    
 @router.delete("/ingresos/{id}")
 def eliminar_ingreso(id: int):
     db = SessionLocal()

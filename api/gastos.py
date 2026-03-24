@@ -33,31 +33,40 @@ def obtener_gastos(id: int):
 def crear_gasto(gasto : GastoSchema):
     db = SessionLocal()
     nuevo_gasto = Gastos(nombre=gasto.nombre, cantidad=gasto.cantidad, categoria=gasto.categoria, fecha=gasto.fecha)
-    try:
-        db.add(nuevo_gasto)
-        db.commit()
-        db.close()
-        return nuevo_gasto
-    except Exception as e :
-        db.rollback()
-        db.close()
-        raise HTTPException(status_code=500, detail="Error al guardar el gasto")
+    validar_gasto = db.query(Gastos).filter(Gastos.nombre == gasto.nombre, Gastos.cantidad == gasto.cantidad).first()
+    if not validar_gasto:
+        try:
+            db.add(nuevo_gasto)
+            db.commit()
+            db.close()
+            return nuevo_gasto
+        except Exception as e :
+            db.rollback()
+            db.close()
+            raise HTTPException(status_code=500, detail="Error al guardar el gasto")
+    else: 
+        raise HTTPException(status_code=409, detail="Gasto repetido")
+    
 
 @router.put("/gasto/{id}")
 def modificar_gasto(id: int, gasto: GastoSchema):
     db = SessionLocal()
-    buscar_id = db.query(Gastos).filter(Gastos.id == id).first()
-    if buscar_id:
-        buscar_id.nombre = gasto.nombre
-        buscar_id.cantidad = gasto.cantidad
-        buscar_id.categoria = gasto.categoria
-        buscar_id.fecha = gasto.fecha
-        db.commit()
-        db.close()
-        return buscar_id
+    validar_gastos = db.query(Gastos).filter(Gastos.nombre == gasto.nombre, Gastos.cantidad == gasto.cantidad, Gastos.id != id).first()
+    if not validar_gastos:   
+        buscar_id = db.query(Gastos).filter(Gastos.id == id).first()
+        if buscar_id:
+            buscar_id.nombre = gasto.nombre
+            buscar_id.cantidad = gasto.cantidad
+            buscar_id.categoria = gasto.categoria
+            buscar_id.fecha = gasto.fecha
+            db.commit()
+            db.close()
+            return buscar_id
+        else:
+            raise HTTPException(status_code=404, detail="Gasto no encontrado")
     else:
-        raise HTTPException(status_code=404, detail="Gasto no encontrado")
-    
+        raise HTTPException(status_code=409, detail="Gasto duplicado")   
+     
 @router.delete("/gasto/{id}")
 def delete_gasto(id: int):
     db = SessionLocal()
