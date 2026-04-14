@@ -20,5 +20,10 @@ class Ingresos(Base):
     cantidad = Column(Float)
     origen = Column(String)
     fecha = Column(Date)
-    
 
+class Usuario(Base):
+    __tablename__ = "usuario"
+    id = Column(Integer, primary_key=True)
+    nombre = Column(String)
+    nombre_usuario = Column(String, unique=True)
+    password = Column(String)
