@@ -2,15 +2,17 @@ from fastapi import APIRouter
 from models.database import SessionLocal
 from models.models import Usuario
 from pydantic import BaseModel
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 from passlib.context import CryptContext
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
 
 SECRET_KEY = "mi_clave_secreta"
 AlGORITHM = "HS256" 
 pwd_context = CryptContext(schemes=["bcrypt"])
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="usuarios/login")
 class UsuarioSchema(BaseModel):
     nombre: str
     nombre_usuario: str
@@ -29,19 +31,18 @@ class UsuarioShemaLogin(BaseModel):
 router = APIRouter()
 
 @router.post("/usuarios/login")
-def login_usuario(usuario: UsuarioShemaLogin):
+def login_usuario(from_data: OAuth2PasswordRequestForm = Depends()):
     db = SessionLocal()
-    validar_nombre_u = db.query(Usuario).filter(Usuario.nombre_usuario == usuario.nombre_usuario).first()
+    validar_nombre_u = db.query(Usuario).filter(Usuario.nombre_usuario == from_data.username).first()
     if validar_nombre_u:
-        password_verify = pwd_context.verify(usuario.password, validar_nombre_u.password)        
+        password_verify = pwd_context.verify(from_data.password, validar_nombre_u.password)        
         if password_verify:
            payload = {
                "sub": validar_nombre_u.nombre_usuario,
                "exp": datetime.now(timezone.utc) + timedelta(minutes=30)
                }
-           
            token = jwt.encode(payload, SECRET_KEY, algorithm=AlGORITHM)
-           return token 
+           return {"access_token": token, "token_type": "bearer"}
         else:
             raise HTTPException(status_code=401, detail = "Usuario o contraseña incorrecta")
     else:
@@ -69,4 +70,11 @@ def crear_usuario(usuario : UsuarioSchema):
         raise HTTPException(status_code=409, detail="Nombre de Usuario ya utilizado")
    
 
-
+def obtener_usuario_actual(token: str = Depends(oauth2_scheme)):
+    try:
+        decode_usuario = jwt.decode(token,SECRET_KEY,algorithms=[AlGORITHM])
+        usuario = decode_usuario["sub"]
+        return usuario
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token invalido o expirado")
+    

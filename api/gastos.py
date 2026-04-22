@@ -2,8 +2,9 @@ from fastapi import APIRouter
 from models.database import SessionLocal
 from models.models import Gastos
 from pydantic import BaseModel
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 from datetime import date
+from api.usuarios import obtener_usuario_actual
 
 class GastoSchema(BaseModel):
     nombre: str
@@ -14,14 +15,14 @@ class GastoSchema(BaseModel):
 router = APIRouter()
 
 @router.get("/gastos")
-def obtener_gastos():
+def obtener_gastos(usuario: str = Depends(obtener_usuario_actual)):
     db = SessionLocal()
     gastos_todos = db.query(Gastos).all()
     db.close()
     return gastos_todos
 
 @router.get(("/gasto/{id}"))
-def obtener_gastos(id: int):
+def obtener_gastos_id(id: int, usuario: str = Depends(obtener_usuario_actual)):
     db = SessionLocal()
     buscar_id = db.query(Gastos).filter(Gastos.id == id).first()
     db.close()
@@ -30,7 +31,7 @@ def obtener_gastos(id: int):
     return buscar_id
 
 @router.post("/gastos")
-def crear_gasto(gasto : GastoSchema):
+def crear_gasto(gasto : GastoSchema,usuario: str = Depends(obtener_usuario_actual)):
     db = SessionLocal()
     nuevo_gasto = Gastos(nombre=gasto.nombre, cantidad=gasto.cantidad, categoria=gasto.categoria, fecha=gasto.fecha)
     validar_gasto = db.query(Gastos).filter(Gastos.nombre == gasto.nombre, Gastos.cantidad == gasto.cantidad).first()
@@ -49,7 +50,7 @@ def crear_gasto(gasto : GastoSchema):
     
 
 @router.put("/gasto/{id}")
-def modificar_gasto(id: int, gasto: GastoSchema):
+def modificar_gasto(id: int, gasto: GastoSchema, usuario: str = Depends(obtener_usuario_actual)):
     db = SessionLocal()
     validar_gastos = db.query(Gastos).filter(Gastos.nombre == gasto.nombre, Gastos.cantidad == gasto.cantidad, Gastos.id != id).first()
     if not validar_gastos:   
@@ -68,7 +69,7 @@ def modificar_gasto(id: int, gasto: GastoSchema):
         raise HTTPException(status_code=409, detail="Gasto duplicado")   
      
 @router.delete("/gasto/{id}")
-def delete_gasto(id: int):
+def delete_gasto(id: int, usuario: str = Depends(obtener_usuario_actual)):
     db = SessionLocal()
     buscar_id_y_eliminar = db.query(Gastos).filter(Gastos.id == id).first()
     if buscar_id_y_eliminar:

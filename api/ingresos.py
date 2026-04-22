@@ -2,8 +2,9 @@ from fastapi import APIRouter
 from models.database import SessionLocal
 from models.models import Ingresos
 from pydantic import BaseModel
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 from datetime import date
+from api.usuarios import obtener_usuario_actual
 
 class IngresoSchema(BaseModel):
     cantidad: int
@@ -13,14 +14,14 @@ class IngresoSchema(BaseModel):
 router = APIRouter()
 
 @router.get("/ingresos")
-def obtener_ingresos():
+def obtener_ingresos(usuario: str = Depends(obtener_usuario_actual)):
     db = SessionLocal()
     ingresos_todos = db.query(Ingresos).all()
     db.close()
     return ingresos_todos
 
 @router.get("/ingresos/{id}")
-def obtener_ingresos_id(id: int):
+def obtener_ingresos_id(id: int, usuario: str = Depends(obtener_usuario_actual)):
     db = SessionLocal()
     buscar_ingreso = db.query(Ingresos).filter(Ingresos.id == id).first()
     db.close()
@@ -30,7 +31,7 @@ def obtener_ingresos_id(id: int):
 
 
 @router.post("/ingresos")
-def agregar_ingreso(ingreso: IngresoSchema):
+def agregar_ingreso(ingreso: IngresoSchema, usuario: str = Depends(obtener_usuario_actual)):
     db = SessionLocal()
     nuevo_ingreso = Ingresos(cantidad=ingreso.cantidad, origen=ingreso.origen, fecha=ingreso.fecha)
     validar_ingresos = db.query(Ingresos).filter(Ingresos.cantidad == ingreso.cantidad, Ingresos.origen == ingreso.origen).first()
@@ -48,7 +49,7 @@ def agregar_ingreso(ingreso: IngresoSchema):
         raise HTTPException(status_code=409, detail="Ingreso Duplicado")
     
 @router.put("/ingresos/{id}")
-def modificar_ingreso(id: int, ingreso: IngresoSchema):
+def modificar_ingreso(id: int, ingreso: IngresoSchema, usuario: str = Depends(obtener_usuario_actual)):
     db = SessionLocal()
     validar_ingresos = db.query(Ingresos).filter(Ingresos.cantidad == ingreso.cantidad, Ingresos.origen == ingreso.origen, Ingresos.id != id).first()
     if not validar_ingresos:
@@ -66,7 +67,7 @@ def modificar_ingreso(id: int, ingreso: IngresoSchema):
         raise HTTPException(status_code=409, detail="Ingreso duplicado")
     
 @router.delete("/ingresos/{id}")
-def eliminar_ingreso(id: int):
+def eliminar_ingreso(id: int, usuario: str = Depends(obtener_usuario_actual)):
     db = SessionLocal()
     buscar_id = db.query(Ingresos).filter(Ingresos.id == id).first()
     if buscar_id:
