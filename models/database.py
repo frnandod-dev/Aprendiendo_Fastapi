@@ -1,6 +1,10 @@
 from sqlalchemy import create_engine
 from models.models import Base
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
+import os 
 
-engine = create_engine("sqlite:///gastos_ingresos.db")
+load_dotenv()
+
+engine = create_engine(os.getenv("DATABASE_URL"))
 SessionLocal = sessionmaker(bind=engine)

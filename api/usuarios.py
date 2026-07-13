@@ -7,10 +7,14 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
-SECRET_KEY = "mi_clave_secreta"
-AlGORITHM = "HS256" 
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+
 pwd_context = CryptContext(schemes=["bcrypt"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="usuarios/login")
 class UsuarioSchema(BaseModel):
@@ -41,7 +45,7 @@ def login_usuario(from_data: OAuth2PasswordRequestForm = Depends()):
                "sub": validar_nombre_u.nombre_usuario,
                "exp": datetime.now(timezone.utc) + timedelta(minutes=30)
                }
-           token = jwt.encode(payload, SECRET_KEY, algorithm=AlGORITHM)
+           token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
            return {"access_token": token, "token_type": "bearer"}
         else:
             raise HTTPException(status_code=401, detail = "Usuario o contraseña incorrecta")
